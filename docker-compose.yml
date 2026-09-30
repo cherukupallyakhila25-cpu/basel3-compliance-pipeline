@@ -1,1 +1,51 @@
+services:
 
+  # ---------------- PostgreSQL: stores configs, metrics, benchmarks, audit log
+  postgres:
+    image: postgres:15                         # official Postgres 15 image
+    container_name: basel_postgres
+    environment:                               # values come from your .env file
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "5432:5432"                            # host:container (use 5433:5432 if 5432 is busy)
+    volumes:
+      - pg_data:/var/lib/postgresql/data       # keeps data after container restarts
+      - ./sql/init.sql:/docker-entrypoint-initdb.d/01_init.sql   # auto-run on first start
+    healthcheck:                               # lets other services wait until DB is ready
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ---------------- Spark master: the "manager" that schedules Spark jobs
+  spark-master:
+    image: apache/spark:3.5.1
+    container_name: spark_master
+    command: ["/opt/spark/bin/spark-class", "org.apache.spark.deploy.master.Master",
+              "--host", "spark-master", "--port", "7077", "--webui-port", "8080"]
+    ports:
+      - "8080:8080"                            # Spark master web UI
+      - "7077:7077"                            # port jobs are submitted to
+    volumes:
+      - ./data:/opt/spark-data                 # Spark sees our CSVs here
+      - ./src:/opt/spark-apps                  # Spark sees our job code here
+
+  # ---------------- Spark worker: the "labourer" that actually processes data
+  spark-worker:
+    image: apache/spark:3.5.1
+    container_name: spark_worker
+    command: ["/opt/spark/bin/spark-class", "org.apache.spark.deploy.worker.Worker",
+              "spark://spark-master:7077", "--cores", "2", "--memory", "2g",
+              "--webui-port", "8081"]
+    depends_on:
+      - spark-master                           # start master first
+    ports:
+      - "8081:8081"                            # worker web UI
+    volumes:
+      - ./data:/opt/spark-data
+      - ./src:/opt/spark-apps
+
+volumes:
+  pg_data:                                     # named volume for Postgres files
