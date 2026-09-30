@@ -1,1 +1,7 @@
-
+pyspark==3.5.1          # Spark engine for Python (same version as the Docker image)
+pandas==2.2.2           # small in-memory tables (FDIC benchmarks, reports)
+faker==25.2.0           # realistic fake names, cities, states
+requests==2.32.3        # HTTP calls to the FDIC API
+SQLAlchemy==2.0.30      # Python <-> PostgreSQL connection layer
+psycopg2-binary==2.9.9  # the actual PostgreSQL driver SQLAlchemy uses
+python-dotenv==1.0.1    # loads settings from the .env file
