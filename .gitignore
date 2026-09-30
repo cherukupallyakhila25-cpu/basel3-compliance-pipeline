@@ -1,1 +1,19 @@
+# Python virtual environment and cache files
+.venv/
+__pycache__/
+*.pyc
 
+# Secrets: the real .env holds passwords, never commit it
+.env
+
+# Generated data (can be recreated anytime by the generator)
+data/raw/*.csv
+data/processed/
+
+# Spark local artefacts
+spark-warehouse/
+metastore_db/
+
+# Editor settings
+.vscode/
+.idea/
